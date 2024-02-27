@@ -1,0 +1,11 @@
+# Ignore audio files
+music/*.mp3
+music/*.wav
+music/*.aac
+music/*.flac
+music/*.m4a
+music/*.ogg
+music/*.wma
+
+# MacOs
+.DS_Store
