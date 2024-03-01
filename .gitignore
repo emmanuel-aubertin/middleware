@@ -9,3 +9,12 @@ music/*.wma
 
 # MacOs
 .DS_Store
+
+# Ice build
+Demo/
+env/
+M/
+*_ice.*
+DOUP/
+DoupMusic.h
+DoupMusic.cpp
