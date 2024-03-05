@@ -3,9 +3,9 @@ import Demo
 
 class FileUploaderI(Demo.FileUploader):
     def uploadFile(self, filename, fileData, current=None):
-        # TODO: Raise error if not mp3 file
-        filename = "music/" + filename
-        with open(filename, 'wb') as file:
+        if not filename.lower().endswith('.mp3'):
+            raise Demo.NotMP3Exception("MP3 files expected")
+        with open("music/" + filename, 'wb') as file:
             file.write(bytearray(fileData))
         print(f"File {filename} has been uploaded successfully.")
 

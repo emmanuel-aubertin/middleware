@@ -28,16 +28,17 @@ all: compiler
 clean:
 	$(PRINT) "\n$(COLOR)--------| $(COLOR)[1;32mCLEANING$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
 	rm -f out.bin *.gch client
-	$(PRINT) "$(COLOR)[32m\tDONE$(COLOR)[0m\n"
+	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 compiler:
 	$(PRINT) "$(COLOR)[32m--------| $(COLOR)[1;32mCompilation of all your .cpp$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
 	$(COMPILER) -std=c++17 -o client client.cpp FileUploader.cpp  -lIce -lIce++11 -lpthread -std=c++11
-	$(PRINT) "$(COLOR)[32m\tDONE$(COLOR)[0m\n"
+	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 test: compiler
-	$(PRINT) "$(COLOR)[32m--------| Test of the binary file |--------$(COLOR)[0m\n\n"
-	./client FileUploader.ice
-	$(PRINT) "\tDONE$(COLOR)[0m\n"
+	$(PRINT) "$(COLOR)[32m--------| $(COLOR)[1;32mTest of the binary file$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
+	-rm upload/FileUploader.ice
+	./client FileUploader.ice "FileUploader:default -p 10000"
+	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 .PHONY: all clean test
