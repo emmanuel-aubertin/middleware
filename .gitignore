@@ -6,6 +6,7 @@ music/*.flac
 music/*.m4a
 music/*.ogg
 music/*.wma
+*.mp3
 
 # MacOs
 .DS_Store

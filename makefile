@@ -37,8 +37,8 @@ compiler:
 
 test: compiler
 	$(PRINT) "$(COLOR)[32m--------| $(COLOR)[1;32mTest of the binary file$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
-	-rm upload/FileUploader.ice
-	./client FileUploader.ice "FileUploader:default -p 10000"
+	-rm music/*.mp3
+	./client Halcyon.mp3 "FileUploader:default -p 10000"
 	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 .PHONY: all clean test

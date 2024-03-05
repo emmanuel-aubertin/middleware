@@ -6,7 +6,10 @@
 
 int uploadFile(int argc, char* argv[]){
     try {
-        Ice::CommunicatorHolder ich(argc, argv);
+        Ice::InitializationData initData;
+        initData.properties = Ice::createProperties();
+        initData.properties->setProperty("Ice.MessageSizeMax", "20480");  // Adjust the value as needed, in KB
+        Ice::CommunicatorHolder ich(argc, argv, initData);
         auto base = ich->stringToProxy("FileUploader:default -p 10000");
         auto uploader = Ice::checkedCast<Demo::FileUploaderPrx>(base);
         if (!uploader) {
@@ -30,6 +33,8 @@ int uploadFile(int argc, char* argv[]){
         std::cerr << "Exception: " << e.what() << std::endl;
         return 1;
     }
+
+
     return 0;
 }
 
