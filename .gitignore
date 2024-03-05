@@ -10,11 +10,18 @@ music/*.wma
 # MacOs
 .DS_Store
 
+# LIBS
+
+FTXUI/
+
 # Ice build
 Demo/
 env/
 M/
 *_ice.*
-DOUP/
-DoupMusic.h
-DoupMusic.cpp
+FileUploader.cpp
+FileUploader.h
+client
+
+# Test/Temp files
+upload/
