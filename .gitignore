@@ -10,8 +10,10 @@ music/*.wma
 # MacOs
 .DS_Store
 
-# LIBS
+#Python
+__pycache__/
 
+# LIBS
 FTXUI/
 
 # Ice build
