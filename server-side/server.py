@@ -25,7 +25,6 @@ def print_id3v1_tags(filename):
     except Exception as e:
         print(f"Error reading file: {e}")
 
-# In your FileUploaderI class method, call print_id3v1_tags:
 class FileUploaderI(Demo.FileUploader):
     def uploadFile(self, filename, fileData, current=None):
         if not filename.lower().endswith('.mp3'):
@@ -35,7 +34,6 @@ class FileUploaderI(Demo.FileUploader):
             file.write(bytearray(fileData))
         print(f"File {filename} has been uploaded successfully.")
         
-        # Print MP3 metadata
         print_id3v1_tags(filepath)
 
 
