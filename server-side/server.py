@@ -43,6 +43,31 @@ class FileUploaderI(Demo.FileUploader):
         print(f"File {filename} has been uploaded successfully.")
         
         print_id3v1_tags(filepath)
+        
+    def getMusicLike(self, find_str, current=None):
+        # Connect to the SQLite database
+        conn = sqlite3.connect('music.db')
+        cursor = conn.cursor()
+        pattern = f'%{find_str}%'
+        result_dict = {"title": [], "artist": [], "album": []}
+        
+        # Query and process results for titles
+        cursor.execute('SELECT title FROM musics_table WHERE title LIKE ?', (pattern,))
+        result_dict["title"].extend(row[0] for row in cursor.fetchall())
+        
+        # Query and process results for artists
+        cursor.execute('SELECT DISTINCT artist FROM musics_table WHERE artist LIKE ?', (pattern,))
+        result_dict["artist"].extend(row[0] for row in cursor.fetchall())
+
+        # Query and process results for albums
+        cursor.execute('SELECT DISTINCT album FROM musics_table WHERE album LIKE ?', (pattern,))
+        result_dict["album"].extend(row[0] for row in cursor.fetchall())
+        
+        conn.close()
+        
+        # Directly return the dictionary; Python lists are automatically treated as Ice sequences
+        return result_dict
+
 
 
 def setup_sqlite_db():
@@ -79,24 +104,7 @@ def main():
         print("Server is running...")
         communicator.waitForShutdown()
 
-def getMusicLike(find_str):
-    # Connect to the SQLite database
-    conn = sqlite3.connect('music.db')
-    cursor = conn.cursor()
-    pattern = f'%{find_str}%'
-    result_dict = {"title": [], "artist": [], "album": []}
-    
-    cursor.execute('SELECT * FROM musics_table WHERE title LIKE ?', (pattern,))
-    result_dict["title"] = [cursor.fetchall()]
-    
-    cursor.execute('SELECT * FROM musics_table WHERE artist LIKE ?', (pattern,))
-    result_dict["artist"] = [cursor.fetchall()]
 
-    cursor.execute('SELECT * FROM musics_table WHERE album LIKE ?', (pattern,))
-    result_dict["album"] = [cursor.fetchall()]
-    
-    conn.close()
-    return result_dict
 
 
 if __name__ == "__main__":

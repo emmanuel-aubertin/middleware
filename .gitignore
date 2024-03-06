@@ -12,6 +12,7 @@
 
 #Python
 __pycache__/
+*.db
 
 # LIBS
 FTXUI/
