@@ -12,5 +12,6 @@ module Demo {
         void uploadFile(string filename, Bytes fileData)
             throws NotMP3Exception;
         musicData getMusicLike(string findStr);
+        Bytes downloadFile(string filename) throws NotMP3Exception;
     };
 }

@@ -27,8 +27,8 @@ def print_id3v1_tags(filename):
                 insert_id3v1_tags(filename, title, artist, album, year, comment, genre)
             else:
                 empty = "Unknow"
-                title = filename.split("/")
-                title = title[len(title)-1][0:len(title[len(title)-1])-4]
+                title = filename.split("/") # Split the file from the path
+                title = title[len(title)-1][0:len(title[len(title)-1])-4] # Remove the .mp3 to get the title
                 insert_id3v1_tags(filename, title, empty, empty, empty, empty, empty)
     except Exception as e:
         print(f"Error reading file: {e}")
@@ -45,28 +45,47 @@ class FileUploaderI(Demo.FileUploader):
         print_id3v1_tags(filepath)
         
     def getMusicLike(self, find_str, current=None):
-        # Connect to the SQLite database
         conn = sqlite3.connect('music.db')
         cursor = conn.cursor()
         pattern = f'%{find_str}%'
         result_dict = {"title": [], "artist": [], "album": []}
-        
-        # Query and process results for titles
+
         cursor.execute('SELECT title FROM musics_table WHERE title LIKE ?', (pattern,))
         result_dict["title"].extend(row[0] for row in cursor.fetchall())
         
-        # Query and process results for artists
         cursor.execute('SELECT DISTINCT artist FROM musics_table WHERE artist LIKE ?', (pattern,))
         result_dict["artist"].extend(row[0] for row in cursor.fetchall())
-
-        # Query and process results for albums
         cursor.execute('SELECT DISTINCT album FROM musics_table WHERE album LIKE ?', (pattern,))
         result_dict["album"].extend(row[0] for row in cursor.fetchall())
-        
         conn.close()
-        
-        # Directly return the dictionary; Python lists are automatically treated as Ice sequences
         return result_dict
+    
+    def getAllMusic(self, current=None):
+        conn = sqlite3.connect('music.db')
+        cursor = conn.cursor()
+        
+        result_dict = {"title": [], "artist": [], "album": []}
+
+        cursor.execute('SELECT title FROM musics_table')
+        result_dict["title"].extend(row[0] for row in cursor.fetchall())
+
+        cursor.execute('SELECT DISTINCT artist FROM musics_table')
+        result_dict["artist"].extend(row[0] for row in cursor.fetchall())
+
+        cursor.execute('SELECT DISTINCT album FROM musics_table')
+        result_dict["album"].extend(row[0] for row in cursor.fetchall())
+
+        conn.close()
+        return result_dict
+    
+    def downloadFile(self, filename, current=None):
+        filepath = "music/" + filename
+        try:
+            with open(filepath, 'rb') as file:
+                fileData = file.read()
+            return fileData
+        except FileNotFoundError:
+            raise Demo.NotMP3Exception(f"File {filename} not found")
 
 
 

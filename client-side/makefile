@@ -27,7 +27,7 @@ all: compiler
 
 clean:
 	$(PRINT) "\n$(COLOR)--------| $(COLOR)[1;32mCLEANING$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
-	rm -f out.bin *.gch client
+	rm -f out.bin *.gch client /tmp/downloaded_*.mp3
 	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 compiler:
@@ -39,7 +39,7 @@ test: compiler
 	$(PRINT) "$(COLOR)[32m--------| $(COLOR)[1;32mTest of the binary file$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
 	-rm music/*.
 	$(PRINT) "\n\n"
-	./client Goldilocks_Enigma.mp3 "FileUploader:default -p 10000"
+	./client Halcyon.mp3 "FileUploader:default -p 10000"
 	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 .PHONY: all clean test

@@ -1,16 +1,18 @@
-module Demo {
+    module Demo {
 
-    sequence<byte> Bytes;
-    sequence<string> seqString;
-    dictionary<string, seqString> musicData;
+        sequence<byte> Bytes;
+        sequence<string> seqString;
+        dictionary<string, seqString> musicData;
 
-    exception NotMP3Exception {
-        string message;
-    };
+        exception NotMP3Exception {
+            string message;
+        };
 
-    interface FileUploader {
-        void uploadFile(string filename, Bytes fileData)
-            throws NotMP3Exception;
-        musicData getMusicLike(string findStr);
-    };
-}
+        interface FileUploader {
+            void uploadFile(string filename, Bytes fileData)
+                throws NotMP3Exception;
+            musicData getMusicLike(string findStr);
+            musicData getAllMusic();
+            Bytes downloadFile(string filename) throws NotMP3Exception;
+        };
+    }
