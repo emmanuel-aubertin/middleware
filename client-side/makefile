@@ -32,7 +32,7 @@ clean:
 
 compiler:
 	$(PRINT) "$(COLOR)[32m--------| $(COLOR)[1;32mCompilation of all your .cpp$(COLOR)[0m$(COLOR)[32m |--------$(COLOR)[0m\n\n"
-	$(COMPILER) -std=c++17 -o client client.cpp FileUploader.cpp  -lIce -lIce++11 -lpthread -std=c++11
+	$(COMPILER) -std=c++17 -o client client.cpp FileUploader.cpp  -lIce -lIce++11 -lpthread -lvlc
 	$(PRINT) "\t$(COLOR)[1;32mDONE$(COLOR)[0m\n"
 
 test: compiler

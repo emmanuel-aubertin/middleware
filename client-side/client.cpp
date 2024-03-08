@@ -15,6 +15,9 @@
 #include "vlc/libvlc.h"
 #include "vlc/libvlc_media.h"
 #include "vlc/libvlc_media_player.h"
+#include <cctype>
+#include <cwctype>
+#include <stdexcept>
 
 std::string PROGNAME = "JeCpA";
 std::string FILE_NAME = __FILE__;
@@ -34,6 +37,23 @@ auto failure = [](std::string message)
               << "\n";
 };
 
+void print_usage()
+{
+    std::cout << "🚀 Welcome in " << PROGNAME << " 🚀" << std::endl
+              << "1. Search for a music" << std::endl
+              << "2. Upload music" << std::endl
+              << "3. Exit" << std::endl;
+};
+
+auto print_help = []()
+{
+    print_release();
+    std::cout << std::endl;
+    print_usage();
+    std::cout << std::endl
+              << std::endl;
+};
+
 // Utility function to remove null characters from strings
 std::string removeNullChars(const std::string &input)
 {
@@ -42,6 +62,16 @@ std::string removeNullChars(const std::string &input)
                  [](char c)
                  { return c != '\0'; });
     return result;
+}
+
+// https://www.oreilly.com/library/view/c-cookbook/0596007612/ch04s13.html#:~:text=Use%20the%20toupper%20and%20tolower,characters%20to%20upper%2D%20or%20lowercase.
+void toLower(std::basic_string<char> &s)
+{
+    for (std::basic_string<char>::iterator p = s.begin();
+         p != s.end(); ++p)
+    {
+        *p = tolower(*p);
+    }
 }
 
 bool downloadFile(const std::string &filename, Demo::FileUploaderPrx &uploader)
@@ -69,6 +99,22 @@ bool downloadFile(const std::string &filename, Demo::FileUploaderPrx &uploader)
         failure("Exception: " + std::string(e.what()));
     }
     return false;
+}
+
+std::string getFirstPathFromMusicData(Demo::musicData m)
+{
+    auto it = m.find("title");
+    if (it != m.end())
+    {
+        Demo::seqString byTitle = it->second;
+        std::string lastEntry = byTitle.back();
+        size_t lastCommaPos = lastEntry.rfind(',');
+        if (lastCommaPos != std::string::npos && (lastCommaPos + 1) < lastEntry.size())
+        {
+            return lastEntry.substr(lastCommaPos + 1);
+        }
+    }
+    return ""; // Return null if musicData malformed
 }
 
 std::vector<std::string> print_id3v1_tags(const std::string &filename)
@@ -190,6 +236,11 @@ void modifyMusic(const std::string &title, const std::string &artist, const std:
     }
 }
 
+void deleteMusic(Demo::musicData &m, Demo::FileUploaderPrx &uploader)
+{
+    deleteMusic(getFirstPathFromMusicData(m), uploader);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -211,49 +262,56 @@ int main(int argc, char *argv[])
             failure("Invalid proxy");
             return 2;
         }
+        std::string userInput;
 
-        Demo::musicData musicData = queryMusicLike("Ha", uploader);
-        auto it = musicData.find("title");
-        if (it != musicData.end())
+        while (true)
         {
-            // The key was found, so it->second contains the seqString (vector<string>)
-            Demo::seqString byTitle = it->second;
-            std::string lastEntry = byTitle.back();
-            size_t lastCommaPos = lastEntry.rfind(','); // Find the last comma, assuming it precedes the path
-            if (lastCommaPos != std::string::npos && (lastCommaPos + 1) < lastEntry.size())
+            print_usage();
+            std::cin >> userInput;
+            toLower(userInput);
+
+            if (userInput == "exit" || userInput == "3")
             {
-                std::string path = lastEntry.substr(lastCommaPos + 1); // Extract the path
-                deleteMusic(path, uploader);
-                std::cout << "Path: " << path << std::endl;
+                std::cout << "👋 Goodbye 👋" << std::endl;
+                exit(0);
             }
-            else
+
+            if (userInput == "upload" || userInput == "2")
             {
-                std::cout << "Path could not be extracted." << std::endl;
+                std::string filePath;
+                while (true)
+                {
+                    std::cout << "Please enter the path: " << std::endl;
+                    std::cin >> filePath;
+                    std::ifstream file(filePath, std::ios::binary);
+                    if (!file)
+                    {
+                        // File does not exist or cannot be accessed
+                        std::cerr << "Error: Unable to open file at " << filePath << ". Please check the path and try again." << std::endl;
+                        std::cout << "Enter the path of the file to upload: ";
+                    }
+                    else
+                    {
+                        file.close();
+                        if (uploadFile(filePath, uploader))
+                        {
+                            std::cout << "File uploaded successfully." << std::endl;
+                        }
+                        else
+                        {
+                            std::cerr << "Failed to upload the file." << std::endl;
+                        }
+                    }
+                }
+                continue;
             }
+
         }
-        else
-        {
-            std::cout << "No titles found for the given pattern." << std::endl;
-        }
-        /* std::cout << "Music data found" << std::endl;
-         if (!musicData.empty() && !musicData["title"].empty())
-         {
-             std::string firstPath = musicData["title"].front();
-             std::cout << "First music title found: " << firstPath << std::endl;
-             deleteMusic(firstPath, uploader);
-             musicData = queryMusicLike("Ha", uploader);
-             std::cout << "First music title found: " << firstPath << std::endl;
-         }
-         else
-         {
-             std::cout << "No music titles found for the given pattern." << std::endl;
-         }*/
     }
     catch (const std::exception &e)
     {
         failure("Exception: " + std::string(e.what()));
         return -1;
     }
-
     return 0;
 }
