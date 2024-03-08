@@ -1,10 +1,9 @@
-        /*
+```cpp
         libvlc_media_player_t *mp;
         libvlc_media_t *m;
 
         const char *const vlc_args[] = {
-            "--verbose=2", // Be much more verbose then normal for debugging purpose
-            "--plugin-path=/usr/lib/x86_64-linux-gnu/vlc/plugins"};
+            "--verbose=2"};
 
         libvlc_instance_t *inst = libvlc_new(sizeof(vlc_args) / sizeof(vlc_args[0]), vlc_args);
 
@@ -25,4 +24,4 @@
         libvlc_media_player_stop(mp);
         libvlc_media_player_release(mp);
         libvlc_release(inst);
-    */
+```

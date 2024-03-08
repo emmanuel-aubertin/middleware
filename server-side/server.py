@@ -1,6 +1,7 @@
 import Ice
 import Demo
 import sqlite3
+import os
 
 def insert_id3v1_tags(filename, title, artist, album, year, comment, genre):
     conn = sqlite3.connect('music.db')
@@ -47,18 +48,32 @@ class FileUploaderI(Demo.FileUploader):
     def getMusicLike(self, find_str, current=None):
         conn = sqlite3.connect('music.db')
         cursor = conn.cursor()
-        pattern = f'%{find_str}%'
-        result_dict = {"title": [], "artist": [], "album": []}
-
-        cursor.execute('SELECT title FROM musics_table WHERE title LIKE ?', (pattern,))
-        result_dict["title"].extend(row[0] for row in cursor.fetchall())
+        pattern = f'%{find_str}%' 
+        title = []
+        cursor.execute('SELECT * FROM musics_table WHERE title LIKE ?', (pattern,))
+        for row in cursor.fetchall():
+            combined_row = ', '.join(str(column) for column in row)
+            title.append(combined_row)
+        print("Title:")
+        for e in title:
+            print(e)
         
-        cursor.execute('SELECT DISTINCT artist FROM musics_table WHERE artist LIKE ?', (pattern,))
-        result_dict["artist"].extend(row[0] for row in cursor.fetchall())
-        cursor.execute('SELECT DISTINCT album FROM musics_table WHERE album LIKE ?', (pattern,))
-        result_dict["album"].extend(row[0] for row in cursor.fetchall())
+        artist = []
+        cursor.execute('SELECT * FROM musics_table WHERE artist LIKE ?', (pattern,))
+        for row in cursor.fetchall():
+            combined_row = ', '.join(str(column) for column in row)
+            artist.append(combined_row)
+        
+        album = []
+        cursor.execute('SELECT * FROM musics_table WHERE album LIKE ?', (pattern,))
+        for row in cursor.fetchall():
+            combined_row = ', '.join(str(column) for column in row)
+            album.append(combined_row)
+        
         conn.close()
-        return result_dict
+        
+        print({"title": title, "artist": artist, "album": album})
+        return {"title": title, "artist": artist, "album": album}
     
     def getAllMusic(self, current=None):
         conn = sqlite3.connect('music.db')
@@ -86,6 +101,42 @@ class FileUploaderI(Demo.FileUploader):
             return fileData
         except FileNotFoundError:
             raise Demo.NotMP3Exception(f"File {filename} not found")
+        
+    def deleteMusic(self, filename, current=None):
+        filepath = "music/" + filename
+        try:
+            os.remove(filepath)
+            print(f"File {filename} has been deleted successfully.")
+        except FileNotFoundError:
+            raise Demo.NotMP3Exception(f"File {filename} not found")
+        
+
+        conn = sqlite3.connect('music.db')
+        cursor = conn.cursor()
+        cursor.execute('''DELETE FROM musics_table WHERE path=?''', (filepath,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            print("No entry found in the database for:", filename)
+        else:
+            print("Database entry deleted for:", filename)
+        conn.close()
+        
+    def modifyMusic(self, title, artist, album, year, comment, genre, path, current=None):
+        conn = sqlite3.connect('music.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''UPDATE musics_table SET title=?, artist=?, album=?, year=?, comment=?, genre=? 
+                          WHERE path=?''', 
+                       (title, artist, album, year, comment, genre, path))
+        
+        if cursor.rowcount == 0:
+            print(f"No database entry found for path: {path}")
+            raise Demo.NotMP3Exception(f"No database entry found for path: {path}")
+        else:
+            print(f"Database entry for path: {path} updated successfully.")
+            conn.commit()
+        
+        conn.close()
 
 
 
