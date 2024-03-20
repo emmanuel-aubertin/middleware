@@ -18,6 +18,10 @@
 #include <cctype>
 #include <cwctype>
 #include <stdexcept>
+#include <ftxui/dom/elements.hpp>
+#include <ftxui/screen/screen.hpp>
+#include <ftxui/component/component.hpp> // For components
+#include <ftxui/component/screen_interactive.hpp>
 
 std::string getFirstPathFromMusicData(Demo::musicData m);
 
@@ -26,6 +30,8 @@ std::string FILE_NAME = __FILE__;
 std::string RELEASE = "Revision 0.1 | Last update 6 Feb 2024";
 std::string AUTHOR = "\033[1mAubertin Emmanuel\033[0m";
 std::string COPYRIGHT = "(c) 2024 " + AUTHOR + " from https://github.com/SkyInSightTeam";
+
+using namespace ftxui;
 
 auto print_release = []
 {
@@ -66,34 +72,40 @@ std::string removeNullChars(const std::string &input)
     return result;
 }
 
-void modifyMusicMetadata(Demo::FileUploaderPrx& uploader, Demo::musicData value) {
+void modifyMusicMetadata(Demo::FileUploaderPrx &uploader, Demo::musicData value)
+{
     std::string title, artist, album, year, comment, genre, path;
 
     std::cout << "Enter new title (leave blank to not modify): ";
-    std::cin >>  title;
+    std::cin >> title;
 
     std::cout << "Enter new artist (leave blank to not modify): ";
-    std::cin >>  artist;
+    std::cin >> artist;
 
     std::cout << "Enter new album (leave blank to not modify): ";
     std::cin >> album;
 
     std::cout << "Enter new year (leave blank to not modify): ";
-    std::cin >>  year;
+    std::cin >> year;
 
     std::cout << "Enter new comment (leave blank to not modify): ";
-    std::cin >>  comment;
+    std::cin >> comment;
 
     std::cout << "Enter new genre (leave blank to not modify): ";
-    std::cin >>  genre;
+    std::cin >> genre;
 
-    try {
+    try
+    {
         // Call the modifyMusic method with the gathered information
         uploader->modifyMusic(title, artist, album, year, comment, genre, getFirstPathFromMusicData(value));
         std::cout << "Music metadata updated successfully." << std::endl;
-    } catch (const Demo::NotMP3Exception& e) {
+    }
+    catch (const Demo::NotMP3Exception &e)
+    {
         std::cerr << "Error: The specified file is not a valid MP3 file." << std::endl;
-    } catch (const Ice::Exception& e) {
+    }
+    catch (const Ice::Exception &e)
+    {
         std::cerr << "An error occurred: " << e.what() << std::endl;
     }
 }
@@ -108,43 +120,29 @@ void toLower(std::basic_string<char> &s)
     }
 }
 
-bool downloadFile(const std::string &filename, Demo::FileUploaderPrx &uploader)
+std::string extractFilename(const std::string &fullPath)
 {
-    try
+    size_t lastSlashPos = fullPath.find_last_of("/\\");
+
+    if (lastSlashPos != std::string::npos)
     {
-        std::vector<unsigned char> fileData = uploader->downloadFile(filename);
-        std::string outputPath = "/tmp/downloaded_" + filename; // Prefix to distinguish downloaded files
-        std::ofstream outputFile(outputPath, std::ios::binary);
-        if (!outputFile)
-        {
-            failure("Unable to open output file: " + outputPath);
-            return false;
-        }
-        outputFile.write(reinterpret_cast<const char *>(fileData.data()), fileData.size());
-        std::cout << "File downloaded and saved as: " << outputPath << std::endl;
-        return true;
+        return fullPath.substr(lastSlashPos + 1);
     }
-    catch (const Demo::NotMP3Exception &e)
+    else
     {
-        failure("NotMP3Exception: " + std::string(e.what()));
+        return fullPath;
     }
-    catch (const std::exception &e)
-    {
-        failure("Exception: " + std::string(e.what()));
-    }
-    return false;
 }
 
-
-
-std::string getPathFromStringValue(Demo::seqString value){
-        std::string lastEntry = value.back();
-        size_t lastCommaPos = lastEntry.rfind(',');
-        if (lastCommaPos != std::string::npos && (lastCommaPos + 1) < lastEntry.size())
-        {
-            return lastEntry.substr(lastCommaPos + 1);
-        }
-        return "";
+std::string getPathFromStringValue(Demo::seqString value)
+{
+    std::string lastEntry = value.back();
+    size_t lastCommaPos = lastEntry.rfind(',');
+    if (lastCommaPos != std::string::npos && (lastCommaPos + 1) < lastEntry.size())
+    {
+        return lastEntry.substr(lastCommaPos + 1);
+    }
+    return "";
 }
 
 std::string getFirstPathFromMusicData(Demo::musicData m)
@@ -258,79 +256,7 @@ void deleteMusic(const std::string &filename, Demo::FileUploaderPrx &uploader)
     }
 }
 
-std::string printSearchResultsAndSelect(const Demo::musicData& results, Demo::FileUploaderPrx& uploader) {
-    if (results.empty()) {
-        std::cout << "No results found." << std::endl;
-        return "";
-    }
-
-    std::vector<std::string> paths; // To store paths corresponding to each option
-
-    int index = 1;
-    for (const auto& [key, value] : results) {
-        std::cout << key << std::endl;
-        for (const auto& path : value) {
-            paths.push_back(path);
-            std::cout << "\t" << index << ". " << path << "\n";
-            index++;
-        }
-    }
-
-    std::cout << "Enter the number of the music to select: ";
-    int selection;
-    std::cin >> selection;
-
-    if (selection < 1 || selection > paths.size()) {
-        std::cerr << "Invalid selection. Please try again." << std::endl;
-        return "";
-    }
-
-    std::string val = paths[selection - 1];
-    size_t lastCommaPos = val.rfind(',');
-    if (lastCommaPos != std::string::npos && (lastCommaPos + 1) < val.size()) {
-        std::string path = val.substr(lastCommaPos + 2);
-        return path;
-    }
-    return "";
-}
-
-
-void handleSelectedMusic(const std::string& selectedPath, Demo::FileUploaderPrx& uploader) {
-    if (selectedPath.empty()) {
-        std::cout << "No music selected." << std::endl;
-        return;
-    }
-
-    std::cout << "Selected: " << selectedPath << std::endl;
-    std::cout << "What would you like to do?" << std::endl;
-    std::cout << "1. Toggle Play" << std::endl; // Assuming a simple play/pause toggle for demonstration
-    std::cout << "2. Delete" << std::endl;
-    std::cout << "3. Modify Metadata" << std::endl;
-    std::cout << "4. Exit" << std::endl;
-
-    int action;
-    std::cin >> action;
-
-    switch (action) {
-        case 1:
-            std::cout << "Toggling play not implemented, libVlc issue on university computer." << std::endl;
-            break;
-        case 2:
-            std::cout << "Delete music: " << selectedPath << std::endl;
-            deleteMusic(selectedPath, uploader);
-            break;
-        case 3:
-            std::cout << "Modify metadata not implemented." << std::endl;
-            break;
-        case 4:
-            exit(0);
-            break;
-        default:
-            std::cerr << "Invalid action. Please try again." << std::endl;
-            break;
-    }
-}
-
+std::atomic<bool> requestPause(false);
 
 void modifyMusic(const std::string &title, const std::string &artist, const std::string &album,
                  const std::string &year, const std::string &comment, const std::string &genre,
@@ -356,16 +282,189 @@ void deleteMusic(Demo::musicData &m, Demo::FileUploaderPrx &uploader)
     deleteMusic(getFirstPathFromMusicData(m), uploader);
 }
 
-int main(int argc, char *argv[])
+std::string selectionMenu(std::string title, std::vector<std::string> items)
 {
-    if (argc < 2)
+    auto screen = ScreenInteractive::Fullscreen();
+
+    int selected = 0;
+    auto menu = Menu(&items, &selected);
+
+    Component menu_component = Menu(&items, &selected);
+    menu_component = CatchEvent(menu_component, [&](Event event) -> bool
+                                {
+                                    if (event == Event::Return)
+                                    {
+                                        screen.ExitLoopClosure()(); // Exit the loop when Enter is pressed.
+                                        return true;                // Event has been handled.
+                                    }
+                                    return false; // Event has not been handled.
+                                });
+
+    auto renderer = Renderer(menu_component, [&]
+                             { return vbox({
+                                   text(title),
+                                   menu_component->Render(),
+                               }); });
+
+    screen.Loop(renderer);
+
+    if (selected >= 0 && selected < items.size())
     {
-        failure("Usage: " + PROGNAME + " <file to upload>");
-        return 1;
+        return items[selected];
+    }
+    else
+    {
+        return "";
+    }
+}
+
+Demo::musicData searchMusic(Demo::FileUploaderPrx &uploader)
+{
+    auto screen = ScreenInteractive::Fullscreen();
+    std::string input; // To hold the user's search query
+
+    // Create an input component
+    auto inputComponent = Input(&input, "Search...");
+
+    // Create a button to submit the search
+    std::string buttonLabel = "Search";
+    bool buttonPressed = false;
+    auto button = Button(&buttonLabel, [&]()
+                         { buttonPressed = true; screen.ExitLoopClosure()(); });
+
+    // Arrange the input and button vertically
+    auto container = Container::Vertical({
+        inputComponent,
+        button,
+    });
+
+    auto renderer = Renderer(container, [&]
+                             { return vbox({
+                                   text("Enter search query:"),
+                                   inputComponent->Render(),
+                                   button->Render(),
+                               }); });
+
+    // Display the UI and wait for the user to submit the search
+    screen.Loop(renderer);
+
+    // Once the button is pressed, use the input to query music
+    if (buttonPressed && !input.empty())
+    {
+        try
+        {
+            return uploader->getMusicLike(input);
+        }
+        catch (const std::exception &e)
+        {
+            failure("Exception: " + std::string(e.what()));
+        }
     }
 
+    // Return an empty musicData object if no search was performed or if there was an error
+    return Demo::musicData();
+}
+
+std::string selectMusic(Demo::FileUploaderPrx &uploader)
+{
+    Demo::musicData results = searchMusic(uploader);
+    int index = 0;
+    std::string music;
+    for (const auto &[key, value] : results)
+    {
+        std::cout << key << std::endl;
+        music = selectionMenu("Music by " + key, value);
+        if (music != "Next")
+        {
+            return music;
+        }
+    }
+    return "";
+}
+
+void playMusic(std::string musicInfo, Demo::FileUploaderPrx &uploader)
+{
     try
     {
+        // Request the server to start streaming the music and get the streaming URL
+        std::string streamUrl = uploader->playMusic(extractFilename(musicInfo));
+
+        if (streamUrl == "None")
+        {
+            failure("Failed to get stream URL from server.");
+            return;
+        }
+
+        const char *vlc_args[] = {
+            "-vvv", // Increase verbosity
+        };
+
+        libvlc_instance_t *vlcInstance = libvlc_new(sizeof(vlc_args) / sizeof(vlc_args[0]), vlc_args);
+        if (!vlcInstance)
+        {
+            failure("Failed to initialize libVLC.");
+            return;
+        }
+
+        libvlc_media_t *media = libvlc_media_new_location(vlcInstance, streamUrl.c_str());
+        libvlc_media_player_t *mediaPlayer = libvlc_media_player_new_from_media(media);
+        libvlc_media_release(media);
+
+        // Play the stream
+        libvlc_media_player_play(mediaPlayer);
+
+        // Wait for the user to stop playback or for the playback to finish
+        std::cout << "Playing stream. Press Enter to stop..." << std::endl;
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        // Stop playback and clean up
+        libvlc_media_player_stop(mediaPlayer);
+        libvlc_media_player_release(mediaPlayer);
+        libvlc_release(vlcInstance);
+    }
+    catch (const Demo::NotMP3Exception &e)
+    {
+        failure("NotMP3Exception: " + std::string(e.what()));
+    }
+    catch (const Ice::Exception &e)
+    {
+        failure("Ice exception: " + std::string(e.what()));
+    }
+    catch (const std::exception &e)
+    {
+        failure("Exception: " + std::string(e.what()));
+    }
+}
+
+void userLoop(Demo::FileUploaderPrx &uploader)
+{
+    std::vector<std::string> options = {"🔎 Search a music 🔎", "🎶 Upload a music 🎶", "🥱 Exit 🥱"};
+    std::string action = selectionMenu("Action to choose", options);
+    if (action == "🔎 Search a music 🔎")
+    {
+        std::string music = selectMusic(uploader);
+        if (music == "")
+        {
+            userLoop(uploader);
+            return;
+        }
+        playMusic(music, uploader);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    try
+    {
+        libvlc_instance_t *vlcInstance = libvlc_new(0, nullptr);
+        if (!vlcInstance)
+        {
+            failure("Failed to initialize libVLC.");
+            return 1; // Or appropriate error handling
+        }
+        // Create a new media player instance
+        libvlc_media_player_t *mediaPlayer = libvlc_media_player_new(vlcInstance);
+
         Ice::InitializationData initData;
         initData.properties = Ice::createProperties();
         initData.properties->setProperty("Ice.MessageSizeMax", "20480");
@@ -377,59 +476,7 @@ int main(int argc, char *argv[])
             failure("Invalid proxy");
             return 2;
         }
-        std::string userInput;
-
-        while (true)
-        {
-            print_usage();
-            std::cin >> userInput;
-            toLower(userInput);
-
-            if (userInput == "exit" || userInput == "3")
-            {
-                std::cout << "👋 Goodbye 👋" << std::endl;
-                exit(0);
-            }
-
-            if (userInput == "upload" || userInput == "2")
-            {
-                std::string filePath;
-                while (true)
-                {
-                    std::cout << "Please enter the path: ";
-                    std::cin >> filePath;
-                    std::ifstream file(filePath, std::ios::binary);
-                    if (!file)
-                    {
-                        // File does not exist or cannot be accessed
-                        std::cerr << "Error: Unable to open file at " << filePath << ". Please check the path and try again." << std::endl;
-                        std::cout << "Enter the path of the file to upload: ";
-                    }
-                    else
-                    {
-                        file.close();
-                        if (uploadFile(filePath, uploader))
-                        {
-                            std::cout << "File uploaded successfully." << std::endl;
-                        }
-                        else
-                        {
-                            std::cerr << "Failed to upload the file." << std::endl;
-                        }
-                    }
-                }
-                continue;
-            }
-            if (userInput == "play" || userInput == "search" || userInput == "1") {
-                std::string searchInput;
-                std::cout << "Search here: " ;
-                std::cin >> searchInput;
-                
-                Demo::musicData result = queryMusicLike(searchInput, uploader);
-                std::string selectedMusic = printSearchResultsAndSelect(result, uploader);
-                handleSelectedMusic(selectedMusic, uploader);
-            }
-        }
+        userLoop(uploader);
     }
     catch (const std::exception &e)
     {

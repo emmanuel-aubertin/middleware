@@ -2,6 +2,25 @@ import Ice
 import Demo
 import sqlite3
 import os
+import socket
+import vlc
+import time
+
+
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip_address = s.getsockname()[0]
+        s.close()
+        return local_ip_address
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+server_ip_address = get_local_ip()
+
+libvlc_instance = vlc.Instance()
 
 def insert_id3v1_tags(filename, title, artist, album, year, comment, genre):
     conn = sqlite3.connect('music.db')
@@ -54,21 +73,21 @@ class FileUploaderI(Demo.FileUploader):
         for row in cursor.fetchall():
             combined_row = ', '.join(str(column) for column in row)
             title.append(combined_row)
-        print("Title:")
-        for e in title:
-            print(e)
+        title.append('Next')
         
         artist = []
         cursor.execute('SELECT * FROM musics_table WHERE artist LIKE ?', (pattern,))
         for row in cursor.fetchall():
             combined_row = ', '.join(str(column) for column in row)
             artist.append(combined_row)
+        artist.append('Next')
         
         album = []
         cursor.execute('SELECT * FROM musics_table WHERE album LIKE ?', (pattern,))
         for row in cursor.fetchall():
             combined_row = ', '.join(str(column) for column in row)
             album.append(combined_row)
+        album.append('Next')
         
         conn.close()
         
@@ -137,6 +156,36 @@ class FileUploaderI(Demo.FileUploader):
             conn.commit()
         
         conn.close()
+        
+    def playMusic(self, filepath, current=None):
+        filepath = "./music/" + filepath
+        try:
+            stream_url = f"rtsp://{server_ip_address}:8080/stream.sdp"
+            # Ensure the filepath is valid
+            if not os.path.exists(filepath):
+                print(f"File {filepath} not found")
+                return "File not found"
+            
+            # Create a new media for the file
+            media = libvlc_instance.media_new_path(filepath)
+            
+            # Configure streaming output options
+            sout = f":sout=#transcode{{acodec=mpga,ab=128,channels=2,samplerate=44100}}:rtp{{mux=ts,sdp={stream_url}}}"
+            media.add_option(sout)
+            media.add_option(":sout-keep")
+            
+            # Create a new media player for the media
+            media_player = libvlc_instance.media_player_new()
+            media_player.set_media(media)
+            
+            # Play the media
+            media_player.play()
+            
+            print(f"Streaming {filepath} on {stream_url}")
+            return stream_url
+        except Exception as e:
+            print(f"Failed to start streaming: {e}")
+            return "None"
 
 
 
